@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>두근두근 네 마음</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+        }
+        .hand-cursor {
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>👆</text></svg>") 16 0, auto;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .selected-card {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -2px rgb(0 0 0 / 0.1);
+            border-color: #FBBF24;
+            border-width: 4px;
+        }
+        .btn-primary {
+            background-color: #FBBF24;
+            color: #854D0E;
+            font-weight: bold;
+            border-radius: 9999px;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+        }
+        .btn-secondary {
+            background-color: #FEF3C7;
+            color: #B45309;
+            border: 2px solid #FCD34D;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); display: none; }
+        }
+        .winner-crown {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-15deg);
+            font-size: 2.5rem;
+        }
+    </style>
+</head>
+<body class="bg-[#FFFBF0] text-gray-800 flex items-center justify-center min-h-screen hand-cursor p-4">
+
+    <div id="app" class="w-full max-w-md mx-auto h-[95vh] flex flex-col">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="flex flex-col items-center justify-center text-center h-full fade-in">
+            <div class="mb-8">
+                <h1 class="text-5xl font-bold text-amber-600 mb-2">두근두근</h1>
+                <h2 class="text-6xl font-bold text-amber-500">네 마음</h2>
+            </div>
+            <div class="w-full px-4">
+                 <button id="start-new-game-btn" class="btn-primary w-full text-xl mb-4">시작하기</button>
+                 <button id="continue-game-btn" class="btn-primary btn-secondary w-full text-xl mb-4 hidden">이어하기</button>
+                 <button id="show-how-to-play-btn" class="text-amber-700 hover:text-amber-900 transition">둘러보기 (게임 방법)</button>
+            </div>
+             <p class="absolute bottom-5 text-xs text-gray-400">만든사람은 SHINY_PEACE</p>
+        </div>
+
+        <!-- Player Setup Screen -->
+        <div id="player-setup-screen" class="hidden flex-col items-center justify-center text-center h-full">
+             <h2 class="text-3xl font-bold mb-6 text-amber-600">누구랑 같이 할까?</h2>
+             <div class="mb-6">
+                <label for="player-count" class="block text-lg mb-2">참여 인원</label>
+                <select id="player-count" class="text-center p-2 rounded-lg border-2 border-amber-300 text-lg">
+                    <option value="2">2명</option>
+                    <option value="3">3명</option>
+                    <option value="4" selected>4명</option>
+                </select>
+             </div>
+             <div id="character-selection" class="w-full">
+                <!-- Character selectors will be generated here -->
+             </div>
+             <button id="start-game-btn" class="btn-primary mt-8 px-12 text-xl">게임 시작!</button>
+        </div>
+        
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden flex-col h-full">
+            <header class="flex justify-between items-center p-2 border-b-2 border-amber-200">
+                <div id="player-scores" class="flex space-x-2">
+                    <!-- Player scores will be generated here -->
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="home-btn" class="text-2xl">🏠</button>
+                    <button id="rules-btn" class="text-2xl">❓</button>
+                    <button id="end-game-btn" class="bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-full">종료</button>
+                </div>
+            </header>
+            
+            <main id="game-main" class="flex-grow flex flex-col items-center justify-center p-4 text-center">
+                <!-- Game content will be dynamically inserted here -->
+            </main>
+        </div>
+        
+        <!-- Turn Transition Screen -->
+        <div id="turn-transition-screen" class="hidden fixed inset-0 bg-amber-500 bg-opacity-95 z-50 flex flex-col items-center justify-center text-white text-center p-8">
+            <div id="turn-transition-content" class="fade-in">
+                <p id="turn-transition-player" class="text-5xl font-bold mb-4"></p>
+                <p class="text-2xl mb-8">차례입니다!</p>
+            </div>
+             <div id="shush-message" class="hidden text-center fade-in">
+                <p class="text-7xl mb-4">🤫</p>
+                <p class="text-2xl font-bold">다른 친구들은<br>잠시 뒤를 돌아봐 주세요!</p>
+             </div>
+             <button id="transition-confirm-btn" class="bg-white text-amber-600 font-bold py-3 px-10 rounded-full text-xl shadow-lg mt-8">확인</button>
+        </div>
+
+        <!-- How to Play Modal -->
+        <div id="how-to-play-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-left relative max-h-[90vh] overflow-y-auto">
+                <h3 class="text-2xl font-bold text-center mb-4 text-amber-600">게임 방법</h3>
+                <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                    <li><strong class="text-amber-800">주인공 정하기:</strong> 매 라운드 한 명씩 돌아가며 '주인공'이 됩니다.</li>
+                    <li><strong class="text-amber-800">상황 & 감정 선택:</strong> 주인공은 제시된 상황 카드를 보고, 어떤 감정을 느낄지 비밀리에 선택합니다.</li>
+                    <li><strong class="text-amber-800">친구들의 추리:</strong> 다른 친구들은 주인공이 어떤 감정을 골랐을지 추리해서 각자 선택합니다.</li>
+                    <li><strong class="text-amber-800">점수 획득:</strong>
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                           <li><strong class="font-normal">주인공:</strong> 내 마음을 맞춘 친구 1명당 ❤️ 1개!</li>
+                           <li><strong class="font-normal">친구들:</strong> 주인공 마음을 맞추면 ❤️ 2개!</li>
+                        </ul>
+                    </li>
+                     <li><strong class="text-amber-800">이야기 나누기:</strong> 결과를 본 후, '왜 그렇게 생각했는지' 서로의 마음에 대해 이야기 나눠요!</li>
+                     <li><strong class="text-amber-800">게임 종료:</strong> 모든 플레이어가 주인공을 한 번씩 하고 나면 한 사이클이 끝납니다. 모든 상황 카드를 사용하면 게임이 완전히 종료되고 최종 우승자가 결정됩니다.</li>
+                </ol>
+                <button id="close-how-to-play-btn" class="absolute top-2 right-3 text-3xl text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const app = document.getElementById('app');
+        const startScreen = document.getElementById('start-screen');
+        const playerSetupScreen = document.getElementById('player-setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameMain = document.getElementById('game-main');
+        const playerCountSelect = document.getElementById('player-count');
+        const characterSelectionDiv = document.getElementById('character-selection');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const startNewGameBtn = document.getElementById('start-new-game-btn');
+        const continueGameBtn = document.getElementById('continue-game-btn');
+        const showHowToPlayBtn = document.getElementById('show-how-to-play-btn');
+        const howToPlayModal = document.getElementById('how-to-play-modal');
+        const closeHowToPlayBtn = document.getElementById('close-how-to-play-btn');
+        const playerScoresDiv = document.getElementById('player-scores');
+        const homeBtn = document.getElementById('home-btn');
+        const rulesBtn = document.getElementById('rules-btn');
+        const turnTransitionScreen = document.getElementById('turn-transition-screen');
+        const turnTransitionContent = document.getElementById('turn-transition-content');
+        const turnTransitionPlayer = document.getElementById('turn-transition-player');
+        const shushMessage = document.getElementById('shush-message');
+        const transitionConfirmBtn = document.getElementById('transition-confirm-btn');
+        const endGameBtn = document.getElementById('end-game-btn');
+
+        // Game State
+        let gameState = {};
+
+        const initialGameState = {
+            players: [],
+            totalPlayers: 4,
+            currentPlayerIndex: 0,
+            currentRound: 0,
+            currentTurnInRound: 0,
+            situation: null,
+            heroChoice: null,
+            playerChoices: {},
+            usedSituations: [],
+            currentRoundEmotions: [], // 라운드별 감정 카드 목록
+        };
+        
+        // --- Game Data ---
+        const characters = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
+        const emotions = [
+            { emoji: '😊', name: '기쁨' }, { emoji: '🥰', name: '사랑' }, { emoji: '😂', name: '웃픔' },
+            { emoji: '😍', name: '심쿵' }, { emoji: '🤔', name: '고민' }, { emoji: '😢', name: '슬픔' },
+            { emoji: '😠', name: '화남' }, { emoji: '😮', name: '놀람' }, { emoji: '😥', name: '걱정' },
+            { emoji: '😴', name: '피곤' }, { emoji: '🤩', name: '신남' }, { emoji: '😤', name: '뿌듯' },
+            { emoji: '😨', name: '두려움' }, { emoji: '😭', name: '억울' }, { emoji: '😱', name: '충격' },
+            { emoji: '🤪', name: '신남' }, { emoji: '😵', name: '혼란' }, { emoji: '🤯', name: '멘붕' },
+            { emoji: '🤗', name: '감동' }, { emoji: '🥺', name: '감사' }, { emoji: '😑', name: '무덤덤' },
+            { emoji: '🥴', name: '당황' }, { emoji: '💔', name: '그리움' }, { emoji: '😔', name: '외로움' }
+        ];
+        const situations = [
+            "친구가 내 비밀을 다른 친구에게 이야기했다.",
+            "정말 열심히 준비한 시험을 망쳤다.",
+            "나만 빼고 단톡방에서 다들 신나게 이야기하고 있다.",
+            "나의 작은 친절에 친구가 진심으로 고마워했다.",
+            "학교에 오니 친구들이 나의 생일 이벤트를 준비해 두었다.",
+            "모두가 보는 앞에서 크게 넘어졌다.",
+            "가장 친한 친구와 말다툼을 하고 집에 왔다.",
+            "모둠활동에서 내가 리더를 맡았다.",
+            "내 의견에 모든 친구들이 좋은 생각이라며 동의해 주었다.",
+            "수행 평가 후 '정말 열심히 연습했구나'라는 칭찬을 들었다.",
+            "친구가 갑자기 약속을 취소했다.",
+            "교실 청소를 하고 있는데, 선생님이 다른 심부름을 부탁했다.",
+            "동생(또는 형/누나/언니)과 다퉜는데, 친구와 약속이 생겼다.",
+            "스마트폰을 오래한다고 부모님께 꾸중을 들었다.",
+            "키우던 식물이 예쁜 꽃을 피웠다.",
+            "수업 시간에 발표를 했는데, 다른 친구가 더 잘한 것 같다.",
+            "이루고 싶은 꿈이 생겼지만, 부모님과 주변의 반대가 심하다.",
+            "체육 시간에 지금껏 해 본 적 없는 농구를 배웠다."
+        ];
+        const talkQuestions = [
+            "이 감정을 색깔로 표현하면 무슨 색일까요?",
+            "이 감정이 느껴질 때 어떤 음식이 생각나나요?",
+            "이 감정을 날씨에 비유한다면?",
+            "이 감정과 어울리는 노래가 있다면?",
+            "만약 이 감정이 동물이 된다면, 어떤 동물일까요?",
+            "이 감정을 한 단어로 표현한다면?"
+        ];
+
+        // --- Audio Context & Sound Generation ---
+        let audioCtx;
+        const initAudio = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        };
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.01);
+
+            switch (type) {
+                case 'shush': // 뒤돌아볼때 '쉿'
+                    // White noise for 'shush'
+                    const bufferSize = audioCtx.sampleRate * 0.3;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const output = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        output[i] = Math.random() * 2 - 1;
+                    }
+                    const whiteNoise = audioCtx.createBufferSource();
+                    whiteNoise.buffer = buffer;
+                    const bandpass = audioCtx.createBiquadFilter();
+                    bandpass.type = 'bandpass';
+                    bandpass.frequency.value = 3000;
+                    bandpass.Q.value = 15;
+                    whiteNoise.connect(bandpass);
+                    bandpass.connect(gainNode);
+                    whiteNoise.start();
+                    whiteNoise.stop(audioCtx.currentTime + 0.2);
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                    break;
+                case 'start': // 라운드 시작
+                     oscillator.type = 'sine';
+                     oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                     oscillator.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                     oscillator.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                     gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                     break;
+                case 'next': // 다음 플레이어
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                    break;
+                case 'select':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                    break;
+                case 'confirm':
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                    break;
+            }
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+        
+        // --- Utility Functions ---
+        const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
+
+        const saveGameState = () => {
+            localStorage.setItem('dugeun-game-state', JSON.stringify(gameState));
+        };
+        
+        const loadGameState = () => {
+            const savedState = localStorage.getItem('dugeun-game-state');
+            if (savedState) {
+                gameState = JSON.parse(savedState);
+                return true;
+            }
+            return false;
+        };
+
+        const clearGameState = () => {
+            localStorage.removeItem('dugeun-game-state');
+        }
+
+        // --- UI Rendering Functions ---
+        const showScreen = (screenId) => {
+            ['start-screen', 'player-setup-screen', 'game-screen'].forEach(id => {
+                const screen = document.getElementById(id);
+                if (id === screenId) {
+                    screen.classList.remove('hidden');
+                    screen.classList.add('flex');
+                    screen.classList.add('fade-in');
+                } else {
+                    screen.classList.add('hidden');
+                    screen.classList.remove('flex');
+                }
+            });
+        };
+        
+        const createCharacterSelectors = (count) => {
+            characterSelectionDiv.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const availableChars = characters.filter(c => 
+                    ![...characterSelectionDiv.querySelectorAll('select')].map(s => s.value).includes(c)
+                );
+
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'flex items-center justify-center mb-3';
+                playerDiv.innerHTML = `
+                    <label class="mr-3 text-lg">플레이어 ${i + 1}</label>
+                    <input type="text" placeholder="이름" class="w-32 p-2 rounded-lg border-2 border-amber-300 mr-2" data-player-index="${i}">
+                    <select class="text-3xl bg-transparent" data-player-index="${i}">
+                        ${availableChars.map(char => `<option value="${char}">${char}</option>`).join('')}
+                    </select>
+                `;
+                characterSelectionDiv.appendChild(playerDiv);
+            }
+
+            // Add event listeners to prevent duplicate character selection
+            characterSelectionDiv.querySelectorAll('select').forEach(select => {
+                select.addEventListener('focus', function(e) {
+                    this.previousValue = this.value;
+                });
+                select.addEventListener('change', function(e) {
+                    const allSelects = [...characterSelectionDiv.querySelectorAll('select')];
+                    const otherSelects = allSelects.filter(s => s !== this);
+                    const selectedValues = otherSelects.map(s => s.value);
+                    if (selectedValues.includes(this.value)) {
+                        alert('이미 다른 친구가 선택한 캐릭터예요!');
+                        this.value = this.previousValue; // Revert to the previous value
+                    } else {
+                        this.previousValue = this.value;
+                    }
+                });
+            });
+        };
+
+        const updateScores = () => {
+            playerScoresDiv.innerHTML = '';
+            gameState.players.forEach(player => {
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'text-center';
+                scoreDiv.innerHTML = `<div class="text-3xl">${player.character}</div><div class="text-sm font-bold">❤️ ${player.score}</div>`;
+                playerScoresDiv.appendChild(scoreDiv);
+            });
+        };
+
+        const showTurnTransition = (playerName, isHero) => {
+             return new Promise(resolve => {
+                turnTransitionPlayer.textContent = `${playerName}`;
+                
+                if(isHero){
+                    playSound('shush');
+                    turnTransitionContent.classList.add('hidden');
+                    shushMessage.classList.remove('hidden');
+                } else {
+                    playSound('next');
+                    shushMessage.classList.add('hidden');
+                    turnTransitionContent.classList.remove('hidden');
+                }
+
+                turnTransitionScreen.classList.remove('hidden');
+                turnTransitionScreen.classList.add('flex');
+                
+                transitionConfirmBtn.onclick = () => {
+                    turnTransitionScreen.classList.add('hidden');
+                    turnTransitionScreen.classList.remove('flex');
+                    resolve();
+                };
+            });
+        }
+        
+        // --- Game Logic Functions ---
+        const initGame = (isContinuing = false) => {
+            document.body.addEventListener('click', initAudio, { once: true });
+            
+            if (isContinuing && loadGameState()) {
+                showScreen('game-screen');
+                updateScores();
+                prepareNewRound();
+            } else {
+                gameState = JSON.parse(JSON.stringify(initialGameState)); // Deep copy
+                clearGameState();
+                playerCountSelect.value = "4";
+                createCharacterSelectors(4);
+                showScreen('player-setup-screen');
+            }
+        };
+
+        const setupGame = () => {
+            gameState.totalPlayers = parseInt(playerCountSelect.value);
+            gameState.players = [];
+            const nameInputs = characterSelectionDiv.querySelectorAll('input');
+            const charSelects = characterSelectionDiv.querySelectorAll('select');
+            for(let i=0; i < gameState.totalPlayers; i++){
+                gameState.players.push({
+                    id: i,
+                    name: nameInputs[i].value || `플레이어 ${i+1}`,
+                    character: charSelects[i].value,
+                    score: 0
+                });
+            }
+            saveGameState();
+            showScreen('game-screen');
+            prepareNewRound();
+        };
+
+        const prepareNewRound = async () => {
+            const heroIndex = gameState.currentRound % gameState.totalPlayers;
+            const hero = gameState.players[heroIndex];
+            gameState.currentPlayerIndex = heroIndex;
+            gameState.currentTurnInRound = 0;
+            gameState.playerChoices = {};
+            gameState.heroChoice = null;
+            
+            // BUG FIX: Generate one set of emotions for the entire round
+            gameState.currentRoundEmotions = shuffle(emotions).slice(0, 8);
+
+            // Check if all situations have been used
+            if (gameState.usedSituations.length >= situations.length) {
+                showFinalResult("모든 질문에 답했어요!");
+                return;
+            }
+
+            // Get a new situation
+            const availableSituations = situations.filter(s => !gameState.usedSituations.includes(s));
+            gameState.situation = shuffle(availableSituations)[0];
+            gameState.usedSituations.push(gameState.situation);
+            
+            updateScores();
+            playSound('start');
+            await showTurnTransition(`${hero.character} ${hero.name}`, true); // Hero's turn
+            startTurn();
+        };
+
+        const startTurn = () => {
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            const isHero = gameState.currentPlayerIndex === (gameState.currentRound % gameState.totalPlayers);
+
+            let selectedEmotion = null;
+
+            // BUG FIX: Use the emotions generated for the round
+            const roundEmotions = gameState.currentRoundEmotions;
+            
+            gameMain.innerHTML = `
+                <div class="w-full text-center flex-grow flex flex-col justify-center">
+                    <p class="text-xl mb-4 font-bold">${isHero ? '주인공' : '친구'} <span class="text-3xl">${currentPlayer.character}</span> ${currentPlayer.name}님!</p>
+                    <div class="bg-amber-100 border-2 border-dashed border-amber-300 p-6 rounded-2xl mb-6 min-h-[100px] flex items-center justify-center">
+                        <p class="text-xl font-bold">${gameState.situation}</p>
+                    </div>
+                    <p class="text-lg mb-4">${isHero ? '어떤 감정이 드나요?' : '주인공은 어떤 감정일까요?'}</p>
+                    <div class="grid grid-cols-4 gap-2 md:gap-4">
+                        ${shuffle(roundEmotions).map(e => `
+                            <div class="emotion-card bg-white rounded-2xl p-2 flex flex-col items-center justify-center aspect-square card-shadow transition-transform duration-300" data-emotion="${e.name}">
+                                <div class="text-4xl md:text-5xl">${e.emoji}</div>
+                                <div class="text-sm font-bold mt-1">${e.name}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button id="confirm-choice-btn" class="btn-primary mt-8 invisible">선택 완료</button>
+                </div>
+            `;
+            
+            const confirmBtn = document.getElementById('confirm-choice-btn');
+            document.querySelectorAll('.emotion-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    document.querySelectorAll('.emotion-card').forEach(c => c.classList.remove('selected-card'));
+                    const clickedCard = e.currentTarget;
+                    clickedCard.classList.add('selected-card');
+                    selectedEmotion = clickedCard.dataset.emotion;
+                    playSound('select');
+                    confirmBtn.classList.remove('invisible');
+                });
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                playSound('confirm');
+                if (isHero) {
+                    gameState.heroChoice = selectedEmotion;
+                } else {
+                    gameState.playerChoices[currentPlayer.id] = selectedEmotion;
+                }
+                nextTurn();
+            });
+        };
+
+        const nextTurn = async () => {
+             gameState.currentTurnInRound++;
+            const heroIndex = gameState.currentRound % gameState.totalPlayers;
+            
+            // Find next player who is not the hero
+            let nextPlayerIndex = -1;
+            let searchIndex = gameState.currentPlayerIndex;
+            for(let i = 0; i < gameState.totalPlayers; i++) {
+                searchIndex = (searchIndex + 1) % gameState.totalPlayers;
+                if (searchIndex !== heroIndex && !gameState.playerChoices.hasOwnProperty(searchIndex)) {
+                    nextPlayerIndex = searchIndex;
+                    break;
+                }
+            }
+
+            if (nextPlayerIndex !== -1) {
+                // Next guesser's turn
+                gameState.currentPlayerIndex = nextPlayerIndex;
+                const nextPlayer = gameState.players[nextPlayerIndex];
+                await showTurnTransition(`${nextPlayer.character} ${nextPlayer.name}`, false);
+                startTurn();
+            } else {
+                // All guesses are in, show results
+                showRoundResult();
+            }
+        };
+        
+        const showRoundResult = async () => {
+            const heroIndex = gameState.currentRound % gameState.totalPlayers;
+            const hero = gameState.players[heroIndex];
+            let heroScoreGained = 0;
+            const guessers = gameState.players.filter(p => p.id !== hero.id);
+            
+            gameMain.innerHTML = `
+                <div class="w-full text-center">
+                    <h2 class="text-3xl font-bold mb-4">결과 발표!</h2>
+                    <p class="mb-2">주인공 ${hero.character}님의 선택은...</p>
+                    <div class="inline-block bg-amber-400 text-white font-bold text-2xl px-6 py-3 rounded-full mb-8 shadow-lg">${gameState.heroChoice}</div>
+                    <div id="result-details" class="space-y-3"></div>
+                    <button id="next-round-btn" class="btn-primary mt-8 invisible">다음 라운드로</button>
+                </div>
+            `;
+            
+            const resultDetailsDiv = document.getElementById('result-details');
+            const nextRoundBtn = document.getElementById('next-round-btn');
+
+            for (const guesser of guessers) {
+                 await new Promise(resolve => setTimeout(resolve, 800)); // Delay for dramatic effect
+                 playSound('next');
+                 const choice = gameState.playerChoices[guesser.id];
+                 const isCorrect = choice === gameState.heroChoice;
+                 const resultDiv = document.createElement('div');
+                 resultDiv.className = `p-3 rounded-lg flex justify-between items-center text-lg ${isCorrect ? 'bg-green-100' : 'bg-red-100'} fade-in`;
+                 
+                 let scoreUpdate = '';
+                 if (isCorrect) {
+                     guesser.score += 2;
+                     heroScoreGained += 1;
+                     scoreUpdate = `<span class="font-bold text-green-600">+❤️2</span>`;
+                 } else {
+                     scoreUpdate = `<span class="font-bold text-red-600">+❤️0</span>`;
+                 }
+
+                 resultDiv.innerHTML = `
+                    <span>${guesser.character} ${guesser.name}님의 추리: <strong>${choice}</strong></span>
+                    <span>${isCorrect ? '정답! ✅' : '아쉽! ❌'} ${scoreUpdate}</span>
+                 `;
+                 resultDetailsDiv.appendChild(resultDiv);
+                 updateScores();
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            hero.score += heroScoreGained;
+            const heroResultDiv = document.createElement('div');
+            heroResultDiv.className = 'p-3 mt-4 rounded-lg bg-blue-100 font-bold text-lg fade-in';
+            heroResultDiv.innerHTML = `주인공 ${hero.character}님, 친구들이 마음을 알아줘서 ❤️${heroScoreGained} 획득!`;
+            resultDetailsDiv.appendChild(heroResultDiv);
+            updateScores();
+
+            // Talk time question
+             await new Promise(resolve => setTimeout(resolve, 800));
+             const talkQuestion = shuffle(talkQuestions)[0];
+             const talkDiv = document.createElement('div');
+             talkDiv.className = 'mt-8 p-4 bg-purple-100 border-2 border-dashed border-purple-300 rounded-2xl fade-in';
+             talkDiv.innerHTML = `
+                <p class="font-bold text-purple-800 mb-2">🎙️ 토크 타임!</p>
+                <p class="text-lg">"왜 그렇게 생각했어?"</p>
+                <p class="text-lg text-purple-600">${talkQuestion}</p>
+             `;
+             gameMain.querySelector('.w-full').appendChild(talkDiv);
+
+            nextRoundBtn.classList.remove('invisible');
+            nextRoundBtn.onclick = () => {
+                gameState.currentRound++;
+                if (gameState.currentRound === gameState.totalPlayers) {
+                   showFinalResult("한 사이클이 끝났어요!");
+                } else {
+                   prepareNewRound();
+                }
+                 saveGameState();
+            };
+        };
+
+        const showFinalResult = (title) => {
+            const winners = gameState.players.sort((a, b) => b.score - a.score);
+            const maxScore = winners[0].score;
+
+            gameMain.innerHTML = `
+                <div class="w-full text-center fade-in">
+                    <h2 class="text-3xl font-bold mb-6 text-amber-600">${title}</h2>
+                    <p class="text-xl mb-4">최고의 마음 탐험가</p>
+                    <div class="space-y-4">
+                        ${winners.map(p => `
+                            <div class="bg-white p-4 rounded-2xl shadow-md flex items-center justify-between relative">
+                                ${p.score === maxScore && maxScore > 0 ? '<div class="winner-crown">👑</div>' : ''}
+                                <span class="text-2xl">${p.character}</span>
+                                <span class="text-xl font-bold">${p.name}</span>
+                                <span class="text-xl font-bold">❤️ ${p.score}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-8 flex flex-col space-y-3">
+                         <button id="continue-cycle-btn" class="btn-primary w-full text-lg ${title.includes('모든 질문') ? 'hidden' : ''}">이어서 계속하기</button>
+                         <button id="restart-btn" class="btn-primary btn-secondary w-full text-lg">처음으로 가기</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                clearGameState();
+                init();
+            });
+
+            const continueCycleBtn = document.getElementById('continue-cycle-btn');
+            if(continueCycleBtn && !continueCycleBtn.classList.contains('hidden')){
+                continueCycleBtn.addEventListener('click', () => {
+                    gameState.currentRound = 0; // Reset for a new cycle
+                    prepareNewRound();
+                });
+            }
+        };
+
+        const init = () => {
+            if (localStorage.getItem('dugeun-game-state')) {
+                continueGameBtn.classList.remove('hidden');
+            } else {
+                continueGameBtn.classList.add('hidden');
+            }
+            showScreen('start-screen');
+        };
+
+        // --- Event Listeners ---
+        playerCountSelect.addEventListener('change', (e) => {
+            createCharacterSelectors(parseInt(e.target.value));
+        });
+
+        startNewGameBtn.addEventListener('click', () => {
+            clearGameState();
+            initGame(false)
+        });
+        
+        continueGameBtn.addEventListener('click', () => initGame(true));
+        
+        startGameBtn.addEventListener('click', setupGame);
+        
+        showHowToPlayBtn.addEventListener('click', () => howToPlayModal.classList.remove('hidden'));
+        closeHowToPlayBtn.addEventListener('click', () => howToPlayModal.classList.add('hidden'));
+        rulesBtn.addEventListener('click', () => howToPlayModal.classList.remove('hidden'));
+        homeBtn.addEventListener('click', init);
+        endGameBtn.addEventListener('click', () => {
+             if(confirm("정말로 게임을 종료하고 처음으로 돌아갈까요?")){
+                 clearGameState();
+                 init();
+             }
+        });
+
+        // Initial load
+        init();
+    </script>
+</body>
+</html>
