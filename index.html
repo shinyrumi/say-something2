@@ -153,6 +153,18 @@
                 <button id="close-how-to-play-btn" class="absolute top-2 right-3 text-3xl text-gray-400 hover:text-gray-600">&times;</button>
             </div>
         </div>
+        
+        <!-- Confirm End Game Modal -->
+        <div id="confirm-end-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center relative fade-in">
+                <h3 class="text-xl font-bold mb-4">정말 종료할까요?</h3>
+                <p class="text-gray-600 mb-6">지금까지의 기록이 모두 사라져요.</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="cancel-end-btn" class="btn-primary btn-secondary px-8 py-2">취소</button>
+                    <button id="confirm-end-btn" class="bg-red-500 text-white font-bold rounded-full px-8 py-2">종료</button>
+                </div>
+            </div>
+        </div>
 
     </div>
 
@@ -180,6 +192,9 @@
         const shushMessage = document.getElementById('shush-message');
         const transitionConfirmBtn = document.getElementById('transition-confirm-btn');
         const endGameBtn = document.getElementById('end-game-btn');
+        const confirmEndModal = document.getElementById('confirm-end-modal');
+        const cancelEndBtn = document.getElementById('cancel-end-btn');
+        const confirmEndBtn = document.getElementById('confirm-end-btn');
 
         // Game State
         let gameState = {};
@@ -198,7 +213,7 @@
         };
         
         // --- Game Data ---
-        const characters = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', ' ', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
+        const characters = ['🐶', '🐱', '🐭', '🐹', '🐰', ' ', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
         const emotions = [
             { emoji: '😊', name: '기쁨' }, { emoji: '🥰', name: '사랑' }, { emoji: '😂', name: '웃픔' },
             { emoji: '😍', name: '심쿵' }, { emoji: '🤔', name: '고민' }, { emoji: '😢', name: '슬픔' },
@@ -391,8 +406,8 @@
                 
                 if (isHero) {
                     playSound('shush');
-                    turnTransitionContent.classList.remove('hidden'); // Show player name
-                    shushMessage.classList.remove('hidden'); // Show shush message
+                    turnTransitionContent.classList.remove('hidden');
+                    shushMessage.classList.remove('hidden');
                 } else {
                     playSound('next');
                     shushMessage.classList.add('hidden');
@@ -405,7 +420,7 @@
                 transitionConfirmBtn.onclick = () => {
                     turnTransitionScreen.classList.add('hidden');
                     turnTransitionScreen.classList.remove('flex');
-                    shushMessage.classList.add('hidden'); // Always hide on exit
+                    shushMessage.classList.add('hidden');
                     resolve();
                 };
             });
@@ -454,7 +469,7 @@
             gameState.playerChoices = {};
             gameState.heroChoice = null;
             
-            gameState.currentRoundEmotions = shuffle(emotions).slice(0, 12); // Increased to 12
+            gameState.currentRoundEmotions = shuffle(emotions).slice(0, 12);
 
             if (gameState.usedSituations.length >= situations.length) {
                 showFinalResult("모든 질문에 답했어요!");
@@ -611,7 +626,6 @@
             nextRoundBtn.classList.remove('invisible');
             nextRoundBtn.onclick = () => {
                 gameState.currentRound++;
-                // Check if a full cycle of players has completed
                 if (gameState.currentRound % gameState.totalPlayers === 0 && gameState.currentRound > 0) {
                    showFinalResult("한 사이클이 끝났어요!");
                 } else {
@@ -686,11 +700,22 @@
         closeHowToPlayBtn.addEventListener('click', () => howToPlayModal.classList.add('hidden'));
         rulesBtn.addEventListener('click', () => howToPlayModal.classList.remove('hidden'));
         homeBtn.addEventListener('click', init);
+        
         endGameBtn.addEventListener('click', () => {
-             if(confirm("정말로 게임을 종료하고 처음으로 돌아갈까요?")){
-                 clearGameState();
-                 init();
-             }
+            confirmEndModal.classList.remove('hidden');
+            confirmEndModal.classList.add('flex');
+        });
+
+        cancelEndBtn.addEventListener('click', () => {
+            confirmEndModal.classList.add('hidden');
+            confirmEndModal.classList.remove('flex');
+        });
+
+        confirmEndBtn.addEventListener('click', () => {
+            confirmEndModal.classList.add('hidden');
+            confirmEndModal.classList.remove('flex');
+            clearGameState();
+            init();
         });
 
         // Initial load
